@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Products By Category (AJAX)</title>
+
+    <style>
+        #loader {
+            position: relative;
+            display: none;
+            margin: 10px 0;
+        }
+        #loader img {
+            width: 40px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+    </style>
+
+    <script>
+        function fetchCategory() {
+            const id = document.getElementById("categoryId").value;
+            if (!id) return;
+
+            const loader = document.getElementById("loader");
+            const tbody = document.getElementById("productBody");
+
+            loader.style.display = "block"; // Show loader
+
+            fetch("/api/category/" + id + "/products")
+                .then(response => {
+                    if (!response.ok) throw new Error("Products not found");
+                    return response.json();
+                })
+                .then(data => {
+                    tbody.innerHTML = ""; // Clear previous rows
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">No products found</td></tr>`;
+                        return;
+                    }
+
+                    data.forEach(p => {
+                        const row = `<tr>
+                                        <td>${p.id}</td>
+                                        <td>${p.name}</td>
+                                        <td>${p.price}</td>
+                                        <td>${p.category.name}</td>
+                                     </tr>`;
+                        tbody.insertAdjacentHTML('beforeend', row);
+                    });
+                })
+                .catch(err => {
+                    alert("Error: " + err.message);
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Error loading products</td></tr>`;
+                })
+                .finally(() => {
+                    loader.style.display = "none"; // Hide loader
+                });
+        }
+    </script>
+</head>
+<body>
+
+<h2>Products By Category (AJAX)</h2>
+
+<label for="categoryId">Select Category:</label>
+<select id="categoryId" onchange="fetchCategory()">
+    <option value="">-- Select --</option>
+    <option th:each="cat : ${category}"
+            th:value="${cat.id}"
+            th:text="${cat.id + ' - ' + cat.name}"></option>
+</select>
+
+<div id="loader">
+    <img src="/images/testing.gif" alt="Loading...">
+</div>
+
+<hr>
+<h4>Product List:</h4>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th><th>Name</th><th>Price</th><th>Category</th>
+    </tr>
+    </thead>
+    <tbody id="productBody">
+    <!-- AJAX will populate rows here -->
+    </tbody>
+</table>
+
+</body>
+</html>

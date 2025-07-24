@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/MainLayout}">
+
+
+<head>
+  <meta charset="UTF-8">
+  <title>Sales List</title>
+</head>
+
+
+<body>
+<main layout:fragment="content" class="container mt-4">
+  <h2>Sales List</h2>
+
+
+  <table class="table table-bordered table-striped">
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Customer</th>
+      <th>Sale Date</th>
+      <td></td>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="sale : ${sales}">
+      <td th:text="${sale.id}"></td>
+      <td th:text="${sale.customer.name}"></td>
+      <td th:text="${sale.saleDate}"></td>
+      <td>
+        <button type="button"
+                class="btn btn-sm btn-info"
+                th:attr="data-id=${sale.id}"
+                onclick="viewItems(this)">
+          View Items
+        </button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <!-- Modal -->
+  <div class="modal fade" id="itemsModal" tabindex="-1" aria-labelledby="itemsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Sale Items</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-bordered" id="itemsTable">
+            <thead>
+            <tr>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Subtotal</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+<div layout:fragment="pageScripts">
+  <script>
+    function viewItems(button) {
+        const saleId = button.getAttribute("data-id");
+
+
+        fetch(`/sales/${saleId}/items`)
+            .then(res => res.json())
+            .then(items => {
+                const tbody = document.querySelector("#itemsTable tbody");
+                tbody.innerHTML = ""; // clear previous
+
+
+                items.forEach(item => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${item.product.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.unitPrice.toFixed(2)}</td>
+                        <td>${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+
+                const modal = new bootstrap.Modal(document.getElementById("itemsModal"));
+                modal.show();
+            })
+            .catch(err => {
+                alert("Failed to fetch sale items");
+                console.error(err);
+            });
+    }
+  </script>
+</div>
+
+
+</html>
+
+

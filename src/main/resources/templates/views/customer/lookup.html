@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Lookup (AJAX)</title>
+    <script>
+        function fetchCustomer()
+        {
+            const id = document.getElementById("customerId").value;
+            if (!id) return;
+
+            loader.style.display = "inline";
+
+            fetch("/api/customers/" + id)
+                .then(response => {
+                    if (!response.ok) throw new Error("Customer not found");
+                    return response.json();
+                })
+                .then(data => {
+
+                    document.getElementById("name").textContent = data.name;
+                    document.getElementById("email").textContent = data.email;
+                    document.getElementById("phone").textContent = data.phone;
+                })
+                .catch(err => {
+                    alert("Error: " + err.message);
+                    document.getElementById("name").textContent = "";
+                    document.getElementById("email").textContent = "";
+                    document.getElementById("phone").textContent = "";
+                })
+                .finally(() => {
+                document.getElementById("loader").style.display = "none";
+                });
+        }
+    </script>
+</head>
+<body>
+<div id="loader" style="display: none; margin-bottom: 10px;">
+    <img src="images/testing.gif" alt="Loading...">
+</div>
+
+<h2>Customer Lookup (AJAX)</h2>
+
+
+<label for="customerId">Select Customer:</label>
+<select id="customerId" onchange="fetchCustomer()">
+    <option value="">-- Select --</option>
+    <option th:each="cust : ${customers}"
+            th:value="${cust.id}"
+            th:text="${cust.id + ' - ' + cust.name}"></option>
+</select>
+
+
+<hr>
+<h4>Details:</h4>
+<p><strong>Name:</strong> <span id="name"></span></p>
+<p><strong>Email:</strong> <span id="email"></span></p>
+<p><strong>Phone:</strong> <span id="phone"></span></p>
+
+
+</body>
+</html>

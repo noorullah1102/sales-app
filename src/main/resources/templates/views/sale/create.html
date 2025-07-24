@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/MainLayout}">
+
+
+<head>
+    <meta charset="UTF-8">
+    <title>Create Sale</title>
+</head>
+
+
+<body>
+
+
+<main layout:fragment="content" class="container mt-4">
+    <h2>Create New Sale</h2>
+
+
+    <form id="saleForm">
+        <!-- Customer -->
+        <div class="mb-3">
+            <label for="customerId" class="form-label">Customer</label>
+            <select class="form-select" id="customerId" name="customerId" required>
+                <option value="">-- Select --</option>
+                <option th:each="cust : ${customers}" th:value="${cust.id}" th:text="${cust.name}"></option>
+            </select>
+        </div>
+
+
+        <!-- Sale Date -->
+        <div class="mb-3">
+            <label for="saleDate" class="form-label">Date</label>
+            <input type="date" class="form-control" id="saleDate" name="saleDate" required>
+        </div>
+
+
+        <!-- Items Table -->
+        <h5>Items</h5>
+        <table class="table table-bordered" id="itemsTable">
+            <thead>
+            <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody id="itemsBody">
+            <!-- dynamically added rows will go here -->
+            </tbody>
+        </table>
+
+
+        <button type="button" class="btn btn-secondary" id="addItemBtn">+ Add Item</button>
+
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save Sale</button>
+        </div>
+    </form>
+
+
+    <!-- ✅ Hidden template moved INSIDE content fragment -->
+    <div id="product-options-template" style="display: none;">
+        <select>
+            <option value="">-- Select Product --</option>
+            <option th:each="prod : ${products}" th:value="${prod.id}" th:text="${prod.name}"></option>
+        </select>
+    </div>
+</main>
+
+
+<!-- ✅ JavaScript placed in layout fragment for MainLayout to pick up -->
+<div layout:fragment="pageScripts">
+    <script>
+        document.addEventListener("DOMContentLoaded", function ()
+        {
+            const templateSelect = document.querySelector("#product-options-template select");
+            if (!templateSelect)
+            {
+                alert("Product template not found.");
+                return;
+            }
+
+
+            const productOptions = templateSelect.innerHTML;
+
+
+            function addItemRow() {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>
+                        <select class="form-select product-select">
+                            ${productOptions}
+                        </select>
+                    </td>
+                    <td><input type="number" class="form-control qty" value="1" min="1"></td>
+                    <td><input type="text" class="form-control price" readonly></td>
+                    <td><input type="text" class="form-control total" readonly></td>
+                    <td><button type="button" class="btn btn-danger btn-sm remove-btn">X</button></td>
+                `;
+                document.getElementById("itemsBody").appendChild(row);
+            }
+
+
+            function removeRow(btn) {
+                btn.closest("tr").remove();
+            }
+
+
+            function updatePrice(select) {
+                const productId = select.value;
+                if (!productId) return;
+
+
+                fetch(`/products/${productId}/price`)
+                    .then(res => res.json())
+                    .then(price => {
+                        const row = select.closest("tr");
+                        row.querySelector(".price").value = price.toFixed(2);
+                        updateTotal(row.querySelector(".qty"));
+                    })
+                    .catch(err => {
+                        console.error("Price fetch failed", err);
+                        alert("Error fetching price.");
+                    });
+            }
+
+
+            function updateTotal(input) {
+                const row = input.closest("tr");
+                const qty = parseInt(row.querySelector(".qty").value);
+                const price = parseFloat(row.querySelector(".price").value);
+                if (!isNaN(qty) && !isNaN(price)) {
+                    row.querySelector(".total").value = (qty * price).toFixed(2);
+                }
+            }
+
+
+            // Event listeners
+            document.getElementById("addItemBtn").addEventListener("click", addItemRow);
+
+
+            document.getElementById("itemsBody").addEventListener("change", function (e) {
+                if (e.target.classList.contains("product-select")) {
+                    updatePrice(e.target);
+                } else if (e.target.classList.contains("qty")) {
+                    updateTotal(e.target);
+                }
+            });
+
+
+            document.getElementById("itemsBody").addEventListener("click", function (e) {
+                if (e.target.classList.contains("remove-btn")) {
+                    removeRow(e.target);
+                }
+            });
+
+
+            document.getElementById("saleForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+
+
+                const customerId = document.getElementById("customerId").value;
+                const saleDate = document.getElementById("saleDate").value;
+
+
+                const items = [];
+                document.querySelectorAll("#itemsBody tr").forEach(row => {
+                    const productId = row.querySelector(".product-select").value;
+                    const quantity = row.querySelector(".qty").value;
+                    if (productId && quantity) {
+                        items.push({
+                            productId: parseInt(productId),
+                            quantity: parseInt(quantity)
+                        });
+                    }
+                });
+
+
+                const payload = {
+                    customerId: parseInt(customerId),
+                    saleDate,
+                    items
+                };
+
+
+                fetch("/sales", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => {
+                    if (res.ok) {
+                        alert("Sale saved successfully!");
+                        window.location.href = "/sales";
+                    } else {
+                        alert("Failed to save sale.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Error saving sale", err);
+                    alert("Server error.");
+                });
+            });
+        });
+    </script>
+</div>
+
+
+</body>
+</html>

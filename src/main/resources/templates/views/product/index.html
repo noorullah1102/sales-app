@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/MainLayout}">
+<body>
+<div layout:fragment="content">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Product List</h2>
+    <a href="/products/create" class="btn btn-primary btn-sm">Add Product</a>
+  </div>
+
+
+  <table class="table table-bordered table-striped">
+    <thead>
+    <tr>
+      <th>ID</th><th>Name</th><th>Price</th><th>Category</th><th>Action</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    <tr th:each="p : ${productPage.content}">
+      <td th:text="${p.id}"></td>
+      <td th:text="${p.name}"></td>
+      <td th:text="${p.price}"></td>
+      <td th:text="${p.category.name}"></td>
+      <td>
+        <a th:href="@{/products/{id}/edit(id=${p.id})}" class="btn btn-sm btn-warning">Edit</a>
+      </td>
+    </tr>
+    </tbody>
+
+  </table>
+
+
+  <p th:if="${#lists.isEmpty(productPage.content)}" class="text-muted">No products available.</p>
+
+  <!-- Pagination Links -->
+  <nav th:if="${productPage.totalPages > 1}">
+    <ul class="pagination">
+      <li th:classappend="${productPage.first} ? 'disabled'" class="page-item">
+        <a th:href="@{/products(page=${productPage.number - 1}, size=${productPage.size})}" class="page-link">Previous</a>
+      </li>
+
+      <li class="page-item"
+          th:each="i : ${#numbers.sequence(0, productPage.totalPages - 1)}"
+          th:classappend="${i == productPage.number} ? 'active'">
+        <a th:href="@{/products(page=${i}, size=${productPage.size})}" class="page-link"
+           th:text="${i + 1}"></a>
+      </li>
+
+      <li th:classappend="${productPage.last} ? 'disabled'" class="page-item">
+        <a th:href="@{/products(page=${productPage.number + 1}, size=${productPage.size})}" class="page-link">Next</a>
+      </li>
+    </ul>
+  </nav>
+</div>
+</body>
+</html>
